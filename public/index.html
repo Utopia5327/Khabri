@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DrugFree India - Report Drug Abuse</title>
+    <meta name="description" content="Report drug abuse incidents and help make our streets safer">
+    <meta name="theme-color" content="#138808">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icon-192x192.png">
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="logo">
+                <i class="fas fa-shield-alt"></i>
+                <h1>DrugFree India</h1>
+            </div>
+            <p class="subtitle">Help make our streets safer by reporting drug abuse</p>
+        </header>
+
+        <main class="main-content">
+            <div class="report-form-container">
+                <h2><i class="fas fa-camera"></i> Report Drug Abuse</h2>
+                
+                <form id="reportForm" class="report-form">
+                    <div class="form-group">
+                        <label for="description">
+                            <i class="fas fa-comment"></i> Description
+                        </label>
+                        <textarea 
+                            id="description" 
+                            name="description" 
+                            placeholder="Describe what you observed (location details, time, type of activity, etc.)"
+                            required
+                            rows="4"
+                        ></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="reporterInfo">
+                            <i class="fas fa-user"></i> Your Name (Optional)
+                        </label>
+                        <input 
+                            type="text" 
+                            id="reporterInfo" 
+                            name="reporterInfo" 
+                            placeholder="Anonymous"
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="photo">
+                            <i class="fas fa-camera"></i> Take Photo
+                        </label>
+                        <div class="photo-input-container">
+                            <input 
+                                type="file" 
+                                id="photo" 
+                                name="photo" 
+                                accept="image/*" 
+                                capture="environment"
+                                required
+                            >
+                            <div class="photo-preview" id="photoPreview">
+                                <i class="fas fa-camera"></i>
+                                <p>Tap to take photo</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group location-group">
+                        <label>
+                            <i class="fas fa-map-marker-alt"></i> Location
+                        </label>
+                        <div class="location-info" id="locationInfo">
+                            <div class="location-status">
+                                <i class="fas fa-spinner fa-spin"></i>
+                                <span>Getting your location...</span>
+                            </div>
+                            <button type="button" id="getLocationBtn" class="btn-secondary">
+                                <i class="fas fa-location-arrow"></i> Get Location
+                            </button>
+                        </div>
+                        <input type="hidden" id="latitude" name="latitude">
+                        <input type="hidden" id="longitude" name="longitude">
+                        <input type="hidden" id="address" name="address">
+                    </div>
+
+                    <div class="form-group">
+                        <button type="submit" id="submitBtn" class="btn-primary" disabled>
+                            <i class="fas fa-paper-plane"></i>
+                            <span>Submit Report</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="navigation-links">
+                <a href="/map" class="btn-secondary">
+                    <i class="fas fa-map"></i> View Reports Map
+                </a>
+            </div>
+        </main>
+
+        <!-- Success Modal -->
+        <div id="successModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <i class="fas fa-check-circle success-icon"></i>
+                    <h3>Report Submitted Successfully!</h3>
+                </div>
+                <div class="modal-body">
+                    <p>Thank you for helping make our community safer. Your report has been submitted to the authorities.</p>
+                    <p><strong>Report ID:</strong> <span id="reportId"></span></p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-primary" onclick="closeModal()">Submit Another Report</button>
+                    <a href="/map" class="btn-secondary">View Map</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Error Modal -->
+        <div id="errorModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <i class="fas fa-exclamation-circle error-icon"></i>
+                    <h3>Error</h3>
+                </div>
+                <div class="modal-body">
+                    <p id="errorMessage"></p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-primary" onclick="closeModal()">Try Again</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html> 

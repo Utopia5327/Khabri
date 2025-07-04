@@ -1,0 +1,26 @@
+{
+  "name": "drugfree-india",
+  "version": "1.0.0",
+  "description": "Interactive platform for reporting drug abuse in India",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "build": "echo 'No build step required for this project'",
+    "test": "echo 'No tests specified'"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "mongoose": "^7.5.0",
+    "multer": "^1.4.5-lts.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "path": "^0.12.7"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "keywords": ["drug-abuse", "reporting", "india", "geolocation", "mobile"],
+  "author": "DrugFree India Team",
+  "license": "MIT"
+} 
