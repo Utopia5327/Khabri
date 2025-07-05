@@ -3,143 +3,137 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DrugFree India - Report Drug Abuse</title>
-    <meta name="description" content="Report drug abuse incidents and help make our streets safer">
-    <meta name="theme-color" content="#138808">
+    <title>Khabri</title>
+    <meta name="description" content="Khabri - Khabri Bano, Sheher Bachao! Crowdsourcing drug abuse data to save our cities.">
+    <meta name="theme-color" content="#F97316">
     <link rel="manifest" href="/manifest.json">
     <link rel="stylesheet" href="styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background: #F9FAFB;
+            font-family: 'Poppins', 'Inter', Arial, sans-serif;
+            color: #1E293B;
+            margin: 0;
+        }
+        .landing {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            min-height: 100vh;
+            text-align: center;
+            padding: 0 16px;
+        }
+        .landing-logo {
+            margin-top: 48px;
+            margin-bottom: 32px;
+        }
+        .landing-logo img {
+            max-width: 140px;
+            width: 100%;
+            display: block;
+            margin: 0 auto;
+        }
+        @media (max-width: 600px) {
+            .landing-logo img {
+                max-width: 90px;
+            }
+        }
+        .landing-title {
+            font-size: 40px;
+            font-weight: 700;
+            color: #1E293B;
+            margin-bottom: 24px;
+            letter-spacing: -1px;
+        }
+        .landing-tagline {
+            display: inline-block;
+            font-size: 20px;
+            font-weight: 500;
+            color: #F97316;
+            background: #FFF7ED;
+            border-radius: 8px;
+            padding: 8px 20px;
+            margin-bottom: 32px;
+        }
+        .landing-desc {
+            font-size: 16px;
+            font-weight: 400;
+            color: #1E293B;
+            margin-bottom: 32px;
+            max-width: 420px;
+        }
+        .landing-btn {
+            padding: 16px 24px;
+            font-size: 18px;
+            font-weight: 700;
+            border-radius: 10px;
+            background: #F97316;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.2s;
+            box-shadow: 0 2px 8px rgba(249, 115, 22, 0.10);
+            margin-bottom: 16px;
+            margin-top: 8px;
+            display: inline-block;
+        }
+        .landing-btn:hover {
+            background: #ea700b;
+            transform: scale(1.05);
+        }
+        .how-it-works-link {
+            display: inline-block;
+            margin-top: 0;
+            margin-bottom: 0;
+            font-size: 16px;
+            color: #F97316;
+            background: none;
+            border: none;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: underline;
+            transition: color 0.2s;
+        }
+        .how-it-works-link:hover {
+            color: #ea700b;
+        }
+        .anonymous-note {
+            margin-top: 24px;
+            font-size: 14px;
+            color: #6B7280;
+            font-style: italic;
+            max-width: 420px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .footer {
+            text-align: center;
+            font-size: 0.98rem;
+            color: #aaa;
+            margin-top: 48px;
+            margin-bottom: 18px;
+            letter-spacing: 0.01em;
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <header class="header">
-            <div class="logo">
-                <i class="fas fa-shield-alt"></i>
-                <h1>DrugFree India</h1>
-            </div>
-            <p class="subtitle">Help make our streets safer by reporting drug abuse</p>
-        </header>
-
-        <main class="main-content">
-            <div class="report-form-container">
-                <h2><i class="fas fa-camera"></i> Report Drug Abuse</h2>
-                
-                <form id="reportForm" class="report-form">
-                    <div class="form-group">
-                        <label for="description">
-                            <i class="fas fa-comment"></i> Description
-                        </label>
-                        <textarea 
-                            id="description" 
-                            name="description" 
-                            placeholder="Describe what you observed (location details, time, type of activity, etc.)"
-                            required
-                            rows="4"
-                        ></textarea>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="reporterInfo">
-                            <i class="fas fa-user"></i> Your Name (Optional)
-                        </label>
-                        <input 
-                            type="text" 
-                            id="reporterInfo" 
-                            name="reporterInfo" 
-                            placeholder="Anonymous"
-                        >
-                    </div>
-
-                    <div class="form-group">
-                        <label for="photo">
-                            <i class="fas fa-camera"></i> Take Photo
-                        </label>
-                        <div class="photo-input-container">
-                            <input 
-                                type="file" 
-                                id="photo" 
-                                name="photo" 
-                                accept="image/*" 
-                                capture="environment"
-                                required
-                            >
-                            <div class="photo-preview" id="photoPreview">
-                                <i class="fas fa-camera"></i>
-                                <p>Tap to take photo</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="form-group location-group">
-                        <label>
-                            <i class="fas fa-map-marker-alt"></i> Location
-                        </label>
-                        <div class="location-info" id="locationInfo">
-                            <div class="location-status">
-                                <i class="fas fa-spinner fa-spin"></i>
-                                <span>Getting your location...</span>
-                            </div>
-                            <button type="button" id="getLocationBtn" class="btn-secondary">
-                                <i class="fas fa-location-arrow"></i> Get Location
-                            </button>
-                        </div>
-                        <input type="hidden" id="latitude" name="latitude">
-                        <input type="hidden" id="longitude" name="longitude">
-                        <input type="hidden" id="address" name="address">
-                    </div>
-
-                    <div class="form-group">
-                        <button type="submit" id="submitBtn" class="btn-primary" disabled>
-                            <i class="fas fa-paper-plane"></i>
-                            <span>Submit Report</span>
-                        </button>
-                    </div>
-                </form>
-            </div>
-
-            <div class="navigation-links">
-                <a href="/map" class="btn-secondary">
-                    <i class="fas fa-map"></i> View Reports Map
-                </a>
-            </div>
-        </main>
-
-        <!-- Success Modal -->
-        <div id="successModal" class="modal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <i class="fas fa-check-circle success-icon"></i>
-                    <h3>Report Submitted Successfully!</h3>
-                </div>
-                <div class="modal-body">
-                    <p>Thank you for helping make our community safer. Your report has been submitted to the authorities.</p>
-                    <p><strong>Report ID:</strong> <span id="reportId"></span></p>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn-primary" onclick="closeModal()">Submit Another Report</button>
-                    <a href="/map" class="btn-secondary">View Map</a>
-                </div>
-            </div>
+    <div class="landing">
+        <div class="landing-logo">
+            <img src="logo.png" alt="Khabri Logo">
         </div>
-
-        <!-- Error Modal -->
-        <div id="errorModal" class="modal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <i class="fas fa-exclamation-circle error-icon"></i>
-                    <h3>Error</h3>
-                </div>
-                <div class="modal-body">
-                    <p id="errorMessage"></p>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn-primary" onclick="closeModal()">Try Again</button>
-                </div>
-            </div>
+        <div class="landing-title">Khabri</div>
+        <div class="landing-tagline">Khabri Bano, Sheher Bachao!</div>
+        <div class="landing-desc">
+            Khabri is a platform to <b>crowdsource data</b> about drug abuse in your city.<br>
+            Report incidents anonymously, help authorities spot patterns, and make your city safer for everyone.
+        </div>
+        <a href="report.html" class="landing-btn">Report Now</a>
+        <div class="anonymous-note">
+            This is an <b>anonymous tipping</b> platform. No details about the reporter are submitted—only the location, activity details, and photo you provide.
         </div>
     </div>
-
-    <script src="app.js"></script>
+    <footer class="footer">Designed by Manas Bhatia &copy; 2025. All rights reserved.</footer>
 </body>
-</html> 
+</html>

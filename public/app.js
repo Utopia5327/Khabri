@@ -190,6 +190,11 @@ async function handleFormSubmit(event) {
         return;
     }
     
+    if (!isLocationInIndia(currentLocation.latitude, currentLocation.longitude)) {
+        showError('Reporting is only allowed within India.');
+        return;
+    }
+    
     // Disable form and show loading state
     setFormLoading(true);
     
@@ -200,7 +205,6 @@ async function handleFormSubmit(event) {
         formData.append('latitude', currentLocation.latitude);
         formData.append('longitude', currentLocation.longitude);
         formData.append('address', document.getElementById('address').value);
-        formData.append('reporterInfo', document.getElementById('reporterInfo').value || 'Anonymous');
         
         const response = await fetch('/api/report', {
             method: 'POST',
@@ -317,4 +321,8 @@ document.querySelectorAll('button').forEach(button => {
 // Prevent form resubmission on page refresh
 if (window.history.replaceState) {
     window.history.replaceState(null, null, window.history.href);
+}
+
+function isLocationInIndia(lat, lng) {
+    return lat >= 6 && lat <= 37 && lng >= 68 && lng <= 97;
 } 

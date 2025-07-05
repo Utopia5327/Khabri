@@ -128,10 +128,6 @@ const reportSchema = new mongoose.Schema({
     type: String,
     enum: ['pending', 'investigating', 'resolved'],
     default: 'pending'
-  },
-  reporterInfo: {
-    type: String,
-    default: 'Anonymous'
   }
 });
 
@@ -151,10 +147,14 @@ app.get('/map', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'map.html'));
 });
 
+function isLocationInIndia(lat, lng) {
+    return lat >= 6 && lat <= 37 && lng >= 68 && lng <= 97;
+}
+
 // POST /api/report - Submit a new report
 app.post('/api/report', upload.single('photo'), async (req, res) => {
   try {
-    const { description, latitude, longitude, address, reporterInfo } = req.body;
+    const { description, latitude, longitude, address } = req.body;
     
     if (!req.file) {
       return res.status(400).json({ error: 'Photo is required' });
@@ -162,6 +162,10 @@ app.post('/api/report', upload.single('photo'), async (req, res) => {
 
     if (!description || !latitude || !longitude) {
       return res.status(400).json({ error: 'Description, latitude, and longitude are required' });
+    }
+
+    if (!isLocationInIndia(parseFloat(latitude), parseFloat(longitude))) {
+      return res.status(400).json({ error: 'Reporting is only allowed within India.' });
     }
 
     // Upload to Google Cloud Storage
@@ -180,8 +184,7 @@ app.post('/api/report', upload.single('photo'), async (req, res) => {
         type: 'Point',
         coordinates: [parseFloat(longitude), parseFloat(latitude)]
       },
-      address: address || '',
-      reporterInfo: reporterInfo || 'Anonymous'
+      address: address || ''
     });
 
     await report.save();
@@ -204,7 +207,7 @@ app.post('/api/report', upload.single('photo'), async (req, res) => {
   }
 });
 
-// GET /api/reports - Get all reports
+// GET /api/reports - Get all reports (for admin use only)
 app.get('/api/reports', async (req, res) => {
   try {
     const reports = await Report.find()
@@ -220,8 +223,7 @@ app.get('/api/reports', async (req, res) => {
         location: report.location,
         address: report.address,
         timestamp: report.timestamp,
-        status: report.status,
-        reporterInfo: report.reporterInfo
+        status: report.status
       }))
     });
 
@@ -268,6 +270,94 @@ app.get('/api/reports/nearby', async (req, res) => {
   } catch (error) {
     console.error('Error fetching nearby reports:', error);
     res.status(500).json({ error: 'Failed to fetch nearby reports' });
+  }
+});
+
+// GET /api/heatmap - Get heat map data (public endpoint)
+app.get('/api/heatmap', async (req, res) => {
+  try {
+    const reports = await Report.find({}, 'location timestamp status');
+    
+    // Group reports by location (rounded to 3 decimal places for clustering)
+    const locationGroups = {};
+    
+    reports.forEach(report => {
+      const coords = report.location.coordinates;
+      const lat = Math.round(coords[1] * 1000) / 1000;
+      const lng = Math.round(coords[0] * 1000) / 1000;
+      const key = `${lat},${lng}`;
+      
+      if (!locationGroups[key]) {
+        locationGroups[key] = {
+          lat: coords[1],
+          lng: coords[0],
+          count: 0,
+          recent: 0, // reports in last 30 days
+          statuses: { pending: 0, investigating: 0, resolved: 0 }
+        };
+      }
+      
+      locationGroups[key].count++;
+      locationGroups[key].statuses[report.status]++;
+      
+      // Check if report is recent (last 30 days)
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      if (new Date(report.timestamp) > thirtyDaysAgo) {
+        locationGroups[key].recent++;
+      }
+    });
+    
+    // Convert to array and calculate intensity
+    const heatmapData = Object.values(locationGroups).map(group => ({
+      lat: group.lat,
+      lng: group.lng,
+      count: group.count,
+      recent: group.recent,
+      intensity: Math.min(group.count * 0.3 + group.recent * 0.7, 10), // Weight recent reports more heavily
+      statuses: group.statuses
+    }));
+    
+    res.json({
+      success: true,
+      data: heatmapData,
+      totalReports: reports.length,
+      totalLocations: heatmapData.length
+    });
+
+  } catch (error) {
+    console.error('Error fetching heat map data:', error);
+    res.status(500).json({ error: 'Failed to fetch heat map data' });
+  }
+});
+
+// GET /api/stats - Get public statistics
+app.get('/api/stats', async (req, res) => {
+  try {
+    const totalReports = await Report.countDocuments();
+    const pendingReports = await Report.countDocuments({ status: 'pending' });
+    const investigatingReports = await Report.countDocuments({ status: 'investigating' });
+    const resolvedReports = await Report.countDocuments({ status: 'resolved' });
+    
+    // Get reports from last 30 days
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const recentReports = await Report.countDocuments({ timestamp: { $gte: thirtyDaysAgo } });
+    
+    res.json({
+      success: true,
+      stats: {
+        total: totalReports,
+        pending: pendingReports,
+        investigating: investigatingReports,
+        resolved: resolvedReports,
+        recent: recentReports
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching statistics:', error);
+    res.status(500).json({ error: 'Failed to fetch statistics' });
   }
 });
 

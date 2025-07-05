@@ -1,49 +1,26 @@
 // Global variables
 let map;
-let markers = [];
 let heatmapLayer = null;
-let reports = [];
+let heatmapData = [];
 let userLocation = null;
+let mapMode = 'heat'; // 'heat' or 'marker'
+let markerLayer = null;
+let mapboxToken = 'pk.eyJ1IjoibWI1MzI3IiwiYSI6ImNsejY0NnQ1cjBmcW8ya29waDlwaTIxa3MifQ.L9_SqJiqej3tbr_P-YOCIQ';
+let baseLayer = null;
 
 // Initialize the map when the page loads
 document.addEventListener('DOMContentLoaded', function() {
     initializeMap();
-    loadReports();
+    loadHeatmapData();
     getUserLocation();
 });
 
 // Initialize Leaflet map
 function initializeMap() {
-    // Start with India center as default
-    let defaultCenter = [20.5937, 78.9629]; // India center
+    let defaultCenter = [22.9734, 78.6569]; // Center of India
     let defaultZoom = 5;
-    
-    // Store user location for later use (but don't center on it immediately)
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-            function(position) {
-                userLocation = {
-                    lat: position.coords.latitude,
-                    lng: position.coords.longitude
-                };
-                console.log('User location stored for later use');
-            },
-            function(error) {
-                console.log('Could not get user location');
-            },
-            { timeout: 3000 } // 3 second timeout
-        );
-    }
-    
     map = L.map('map').setView(defaultCenter, defaultZoom);
-    
-    // Add OpenStreetMap tiles
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors',
-        maxZoom: 18
-    }).addTo(map);
-    
-    // Add custom controls
+    setBaseLayer();
     addMapControls();
 }
 
@@ -53,258 +30,176 @@ function addMapControls() {
     L.control.zoom({
         position: 'bottomright'
     }).addTo(map);
-    
-    // Note: Fullscreen control requires additional plugin
-    // For now, we'll skip it to avoid errors
-    // To add fullscreen support, include: https://unpkg.com/leaflet.fullscreen@2.4.0/Control.FullScreen.js
 }
 
-// Load reports from the API
-async function loadReports() {
+// Load heat map data from the API
+async function loadHeatmapData() {
     try {
-        const response = await fetch('/api/reports');
+        const response = await fetch('/api/heatmap');
         const data = await response.json();
         
         if (data.success) {
-            reports = data.reports;
-            console.log(`Loaded ${reports.length} reports from API`);
-            displayReports();
+            heatmapData = data.data;
+            console.log(`Loaded ${heatmapData.length} heat map points`);
+            updateMapDisplay();
             updateStatistics();
         } else {
-            throw new Error(data.error || 'Failed to load reports');
+            throw new Error(data.error || 'Failed to load heat map data');
         }
     } catch (error) {
-        console.error('Error loading reports:', error);
-        showError('Failed to load reports. Please try again.');
+        console.error('Error loading heat map data:', error);
+        showError('Failed to load heat map data. Please try again.');
     }
 }
 
-// Display reports on the map and in the list
-function displayReports() {
-    clearMarkers();
-    
-    if (reports.length === 0) {
-        showNoReports();
-        return;
-    }
-    
-    reports.forEach(report => {
-        addMarker(report);
-    });
-    
-    updateReportsList();
-    
-    // Fit map to show all markers if there are any
-    if (markers.length > 0) {
-        const group = new L.featureGroup(markers);
-        map.fitBounds(group.getBounds().pad(0.1));
-        console.log(`Map centered on ${markers.length} reports`);
-    } else {
-        // If no reports, center on India or user location if available
-        if (userLocation) {
-            map.setView([userLocation.lat, userLocation.lng], 10);
-            console.log('Map centered on user location (no reports)');
+// Load statistics from the API
+async function loadStatistics() {
+    try {
+        const response = await fetch('/api/stats');
+        const data = await response.json();
+        
+        if (data.success) {
+            return data.stats;
         } else {
-            map.setView([20.5937, 78.9629], 5); // India center
-            console.log('Map centered on India (no reports)');
+            throw new Error(data.error || 'Failed to load statistics');
         }
+    } catch (error) {
+        console.error('Error loading statistics:', error);
+        return null;
     }
 }
 
-// Add a marker for a report
-function addMarker(report) {
-    const coordinates = report.location.coordinates;
-    const lat = coordinates[1];
-    const lng = coordinates[0];
-    
-    console.log(`Adding marker for report ${report.id} at [${lat}, ${lng}]`);
-    
-    // Create custom icon based on status
-    const icon = createStatusIcon(report.status);
-    
-    const marker = L.marker([lat, lng], { icon: icon })
-        .addTo(map)
-        .bindPopup(createPopupContent(report));
-    
-    markers.push(marker);
+// Display heat map on the map
+function displayHeatmap() {
+    if (heatmapLayer) {
+        map.removeLayer(heatmapLayer);
+    }
+    if (heatmapData.length === 0) {
+        addDummyData();
+        if (heatmapData.length === 0) {
+            showNoData();
+            return;
+        }
+    }
+    // Brighter, more visible heatmap for dark background
+    const heatData = heatmapData.map(point => [
+        point.lat,
+        point.lng,
+        Math.max(0.5, point.intensity / 10) // boost minimum intensity
+    ]);
+    heatmapLayer = L.heatLayer(heatData, {
+        radius: 40,
+        blur: 30,
+        maxZoom: 10,
+        minOpacity: 0.5, // makes low values more visible
+        gradient: {
+            0.0: '#00eaff',   // bright cyan for low
+            0.3: '#00bfff',   // lighter blue
+            0.5: '#00ff99',   // greenish
+            0.7: '#ffff00',   // yellow
+            1.0: '#ff0000'    // red
+        }
+    }).addTo(map);
+    // Only fit bounds if all points are in India (roughly between lat 6-37, lng 68-97)
+    const allInIndia = heatmapData.every(point =>
+        point.lat >= 6 && point.lat <= 37 && point.lng >= 68 && point.lng <= 97
+    );
+    if (allInIndia && heatmapData.length > 0) {
+        const bounds = L.latLngBounds(heatmapData.map(point => [point.lat, point.lng]));
+        map.fitBounds(bounds.pad(0.1));
+    } else {
+        map.setView([22.9734, 78.6569], 5);
+    }
 }
 
-// Create custom icon based on report status
-function createStatusIcon(status) {
-    const iconColors = {
-        'pending': '#ffc107',
-        'investigating': '#17a2b8',
-        'resolved': '#28a745'
-    };
+// Get color based on intensity (blue to red gradient)
+function getHeatmapColor(intensity) {
+    // Normalize intensity to 0-1 range (assuming max intensity is 10)
+    const normalized = Math.min(intensity / 10, 1);
     
-    const color = iconColors[status] || '#ffc107';
-    
-    return L.divIcon({
-        className: 'custom-marker',
-        html: `<div style="
-            background-color: ${color};
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            border: 3px solid white;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-        "></div>`,
-        iconSize: [20, 20],
-        iconAnchor: [10, 10]
-    });
+    // Create gradient from blue to red
+    if (normalized <= 0.2) {
+        // Blue to cyan
+        const factor = normalized / 0.2;
+        return `rgb(0, ${Math.round(102 + factor * 153)}, ${Math.round(255 - factor * 51)})`;
+    } else if (normalized <= 0.4) {
+        // Cyan to yellow
+        const factor = (normalized - 0.2) / 0.2;
+        return `rgb(${Math.round(factor * 255)}, 255, ${Math.round(204 - factor * 204)})`;
+    } else if (normalized <= 0.6) {
+        // Yellow to orange
+        const factor = (normalized - 0.4) / 0.2;
+        return `rgb(255, ${Math.round(255 - factor * 153)}, 0)`;
+    } else if (normalized <= 0.8) {
+        // Orange to red-orange
+        const factor = (normalized - 0.6) / 0.2;
+        return `rgb(255, ${Math.round(102 - factor * 102)}, 0)`;
+    } else {
+        // Red-orange to red
+        const factor = (normalized - 0.8) / 0.2;
+        return `rgb(255, ${Math.round(factor * 51)}, 0)`;
+    }
 }
 
-// Create popup content for a marker
-function createPopupContent(report) {
-    const date = new Date(report.timestamp).toLocaleDateString('en-IN', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
-    
-    const statusClass = `status-${report.status}`;
+// Get radius based on intensity
+function getHeatmapRadius(intensity) {
+    // Base radius of 200 meters, scale with intensity for better visibility at country level
+    return Math.max(200, Math.min(2000, intensity * 200));
+}
+
+// Create popup content for heat map points
+function createHeatmapPopup(point) {
+    const totalReports = point.count;
+    const recentReports = point.recent;
     
     return `
-        <div class="popup-content" style="min-width: 250px;">
-            <div class="popup-header">
-                <h4 style="margin: 0 0 10px 0; color: #333;">Report #${report.id.slice(-6)}</h4>
-                <span class="report-status ${statusClass}" style="font-size: 0.7rem; padding: 2px 6px;">
-                    ${report.status.charAt(0).toUpperCase() + report.status.slice(1)}
-                </span>
+        <div class="popup-content" style="min-width: 200px;">
+            <h4 style="margin: 0 0 10px 0; color: #333;">Area Activity</h4>
+            <div style="margin: 10px 0;">
+                <div><strong>Total Reports:</strong> ${totalReports}</div>
+                <div><strong>Recent (30 days):</strong> ${recentReports}</div>
+                <div><strong>Intensity Level:</strong> ${Math.round(point.intensity * 10) / 10}/10</div>
             </div>
-            <p style="margin: 10px 0; color: #666; font-size: 0.9rem;">
-                ${report.description}
-            </p>
-            ${report.imageUrl ? `
-                <img src="${report.imageUrl}" alt="Report photo" 
-                     style="width: 100%; max-width: 200px; height: 120px; object-fit: cover; border-radius: 5px; margin: 10px 0;">
-            ` : ''}
-            <div style="font-size: 0.8rem; color: #999; margin-top: 10px;">
-                <div>📅 ${date}</div>
-                ${report.address ? `<div>📍 ${report.address}</div>` : ''}
-                ${report.reporterInfo && report.reporterInfo !== 'Anonymous' ? 
-                    `<div>👤 ${report.reporterInfo}</div>` : ''}
+            <div style="font-size: 0.8rem; color: #666; margin-top: 10px;">
+                <div>📍 ${point.lat.toFixed(4)}, ${point.lng.toFixed(4)}</div>
             </div>
         </div>
     `;
 }
 
-// Update the reports list
-function updateReportsList() {
-    const reportsList = document.getElementById('reportsList');
-    
-    if (reports.length === 0) {
-        reportsList.innerHTML = `
-            <div class="no-reports">
-                <i class="fas fa-inbox"></i>
-                <p>No reports found</p>
-            </div>
-        `;
+// Update statistics display
+async function updateStatistics() {
+    // --- DUMMY DATA LOGIC: REMOVE BEFORE PRODUCTION ---
+    const dummyCities = [
+        { lat: 28.6139, lng: 77.2090 }, // Delhi
+        { lat: 19.0760, lng: 72.8777 }, // Mumbai
+        { lat: 26.9124, lng: 75.7873 }, // Jaipur
+        { lat: 15.2993, lng: 74.1240 }  // Goa
+    ];
+    const isDummy =
+        heatmapData.length === 4 &&
+        heatmapData.every((pt, i) =>
+            Math.abs(pt.lat - dummyCities[i].lat) < 0.01 &&
+            Math.abs(pt.lng - dummyCities[i].lng) < 0.01
+        );
+    if (isDummy) {
+        // Use the already-set dummy stats
+        document.getElementById('totalLocations').textContent = heatmapData.length;
+        // totalReports and recentReports are already set by addDummyData
         return;
     }
-    
-    // Sort reports by date (newest first)
-    const sortedReports = [...reports].sort((a, b) => 
-        new Date(b.timestamp) - new Date(a.timestamp)
-    );
-    
-    // Show only the 10 most recent reports
-    const recentReports = sortedReports.slice(0, 10);
-    
-    reportsList.innerHTML = recentReports.map(report => createReportListItem(report)).join('');
-}
-
-// Create a report list item
-function createReportListItem(report) {
-    const date = new Date(report.timestamp).toLocaleDateString('en-IN', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
-    
-    const statusClass = `status-${report.status}`;
-    
-    return `
-        <div class="report-item" onclick="focusOnReport('${report.id}')">
-            <div class="report-header">
-                <span class="report-date">${date}</span>
-                <span class="report-status ${statusClass}">
-                    ${report.status.charAt(0).toUpperCase() + report.status.slice(1)}
-                </span>
-            </div>
-            <div class="report-description">
-                ${report.description.length > 100 ? 
-                    report.description.substring(0, 100) + '...' : 
-                    report.description}
-            </div>
-            ${report.imageUrl ? `
-                <img src="${report.imageUrl}" alt="Report photo" class="report-image">
-            ` : ''}
-            ${report.address ? `
-                <div class="report-location">
-                    <i class="fas fa-map-marker-alt"></i> ${report.address}
-                </div>
-            ` : ''}
-        </div>
-    `;
-}
-
-// Focus on a specific report
-function focusOnReport(reportId) {
-    const report = reports.find(r => r.id === reportId);
-    if (report) {
-        const coordinates = report.location.coordinates;
-        const lat = coordinates[1];
-        const lng = coordinates[0];
-        
-        map.setView([lat, lng], 16);
-        
-        // Find and open the marker popup
-        const marker = markers.find(m => {
-            const markerLatLng = m.getLatLng();
-            return markerLatLng.lat === lat && markerLatLng.lng === lng;
-        });
-        
-        if (marker) {
-            marker.openPopup();
-        }
+    // --- END DUMMY DATA LOGIC ---
+    const stats = await loadStatistics();
+    if (stats) {
+        document.getElementById('totalReports').textContent = stats.total;
+        document.getElementById('recentReports').textContent = stats.recent;
+        document.getElementById('totalLocations').textContent = heatmapData.length;
+    } else {
+        // Fallback to heat map data only
+        document.getElementById('totalReports').textContent = '-';
+        document.getElementById('recentReports').textContent = '-';
+        document.getElementById('totalLocations').textContent = heatmapData.length;
     }
-}
-
-// Update statistics
-function updateStatistics() {
-    const total = reports.length;
-    const pending = reports.filter(r => r.status === 'pending').length;
-    const investigating = reports.filter(r => r.status === 'investigating').length;
-    const resolved = reports.filter(r => r.status === 'resolved').length;
-    
-    document.getElementById('totalReports').textContent = total;
-    document.getElementById('pendingReports').textContent = pending;
-    document.getElementById('investigatingReports').textContent = investigating;
-    document.getElementById('resolvedReports').textContent = resolved;
-}
-
-// Clear all markers
-function clearMarkers() {
-    markers.forEach(marker => map.removeLayer(marker));
-    markers = [];
-}
-
-// Show no reports message
-function showNoReports() {
-    document.getElementById('reportsList').innerHTML = `
-        <div class="no-reports">
-            <i class="fas fa-inbox"></i>
-            <p>No reports found</p>
-            <p style="font-size: 0.9rem; margin-top: 10px;">
-                Be the first to report drug abuse in your area!
-            </p>
-        </div>
-    `;
 }
 
 // Get user's current location
@@ -316,8 +211,22 @@ function getUserLocation() {
                     lat: position.coords.latitude,
                     lng: position.coords.longitude
                 };
-                
-                // Add user location marker
+                console.log('User location stored');
+            },
+            function(error) {
+                console.log('Could not get user location:', error);
+            },
+            { timeout: 3000 }
+        );
+    }
+}
+
+// Center map on user location
+function centerOnUser() {
+    if (userLocation) {
+        map.setView([userLocation.lat, userLocation.lng], 14);
+        
+        // Add user location marker if not already present
                 const userIcon = L.divIcon({
                     className: 'user-marker',
                     html: `<div style="
@@ -336,71 +245,79 @@ function getUserLocation() {
                     .addTo(map)
                     .bindPopup('Your current location')
                     .openPopup();
-            },
-            function(error) {
-                console.log('Could not get user location:', error);
-            }
-        );
-    }
-}
-
-// Center map on user location
-function centerOnUser() {
-    if (userLocation) {
-        map.setView([userLocation.lat, userLocation.lng], 14);
     } else {
         getUserLocation();
     }
 }
 
-// Toggle heatmap view
-function toggleHeatmap() {
-    if (heatmapLayer) {
-        map.removeLayer(heatmapLayer);
-        heatmapLayer = null;
-    } else {
-        // Create heatmap data
-        const heatmapData = reports.map(report => {
-            const coords = report.location.coordinates;
-            return [coords[1], coords[0], 1]; // [lat, lng, intensity]
-        });
-        
-        // Simple heatmap implementation using circle markers
-        heatmapLayer = L.layerGroup();
-        
-        heatmapData.forEach(point => {
-            const circle = L.circle([point[0], point[1]], {
-                color: 'red',
-                fillColor: '#f03',
-                fillOpacity: 0.3,
-                radius: 100
-            }).addTo(heatmapLayer);
-        });
-        
-        heatmapLayer.addTo(map);
-    }
-}
-
 // Refresh data
 function refreshData() {
-    loadReports();
+    loadHeatmapData();
+    // Reset to India view after refresh
+    map.setView([20.5937, 78.9629], 5);
+}
+
+// Show no data message
+function showNoData() {
+    // Create a simple message on the map
+    const noDataDiv = L.divIcon({
+        className: 'no-data-message',
+        html: `<div style="
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            text-align: center;
+            font-size: 1.1rem;
+            color: #666;
+        ">
+            <i class="fas fa-inbox" style="font-size: 2rem; color: #ccc; margin-bottom: 10px;"></i>
+            <div>No reports found</div>
+            <div style="font-size: 0.9rem; margin-top: 5px;">Be the first to report drug abuse in your area!</div>
+        </div>`,
+        iconSize: [300, 100],
+        iconAnchor: [150, 50]
+    });
+    
+    L.marker([20.5937, 78.9629], { icon: noDataDiv }).addTo(map);
 }
 
 // Show error message
 function showError(message) {
-    document.getElementById('reportsList').innerHTML = `
-        <div class="no-reports">
-            <i class="fas fa-exclamation-triangle"></i>
-            <p>${message}</p>
-            <button class="btn-secondary" onclick="refreshData()" style="margin-top: 15px;">
+    const errorDiv = L.divIcon({
+        className: 'error-message',
+        html: `<div style="
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            text-align: center;
+            font-size: 1.1rem;
+            color: #d32f2f;
+        ">
+            <i class="fas fa-exclamation-triangle" style="font-size: 2rem; margin-bottom: 10px;"></i>
+            <div>${message}</div>
+            <button onclick="refreshData()" style="
+                margin-top: 15px;
+                padding: 8px 16px;
+                background: #138808;
+                color: white;
+                border: none;
+                border-radius: 5px;
+                cursor: pointer;
+            ">
                 <i class="fas fa-sync-alt"></i> Try Again
             </button>
-        </div>
-    `;
+        </div>`,
+        iconSize: [300, 120],
+        iconAnchor: [150, 60]
+    });
+    
+    L.marker([20.5937, 78.9629], { icon: errorDiv }).addTo(map);
 }
 
-// Auto-refresh every 30 seconds
-setInterval(refreshData, 30000);
+// Auto-refresh every 60 seconds
+setInterval(refreshData, 60000);
 
 // Handle window resize
 window.addEventListener('resize', function() {
@@ -419,13 +336,6 @@ document.addEventListener('keydown', function(event) {
                 refreshData();
             }
             break;
-        case 'h':
-        case 'H':
-            if (event.ctrlKey || event.metaKey) {
-                event.preventDefault();
-                toggleHeatmap();
-            }
-            break;
         case 'l':
         case 'L':
             if (event.ctrlKey || event.metaKey) {
@@ -436,29 +346,132 @@ document.addEventListener('keydown', function(event) {
     }
 });
 
-// Add touch gestures for mobile
-let touchStartX = 0;
-let touchStartY = 0;
-
-document.addEventListener('touchstart', function(event) {
-    touchStartX = event.touches[0].clientX;
-    touchStartY = event.touches[0].clientY;
-});
-
-document.addEventListener('touchend', function(event) {
-    if (!touchStartX || !touchStartY) return;
-    
-    const touchEndX = event.changedTouches[0].clientX;
-    const touchEndY = event.changedTouches[0].clientY;
-    
-    const diffX = touchStartX - touchEndX;
-    const diffY = touchStartY - touchEndY;
-    
-    // Swipe down to refresh
-    if (Math.abs(diffY) > Math.abs(diffX) && diffY > 50) {
-        refreshData();
+// --- DUMMY DATA GENERATION FOR TESTING ---
+function addDummyData() {
+    // Only add if no real data
+    if (heatmapData.length > 0) return;
+    // Major Indian cities: Delhi, Mumbai, Jaipur, Goa
+    const cities = [
+        { name: 'Delhi', lat: 28.6139, lng: 77.2090 },
+        { name: 'Mumbai', lat: 19.0760, lng: 72.8777 },
+        { name: 'Jaipur', lat: 26.9124, lng: 75.7873 },
+        { name: 'Goa', lat: 15.2993, lng: 74.1240 }
+    ];
+    let totalReports = 0;
+    let recentReports = 0;
+    cities.forEach(city => {
+        const count = Math.floor(Math.random() * 10) + 5; // 5-14
+        const recent = Math.floor(Math.random() * 5) + 1;  // 1-5
+        totalReports += count;
+        recentReports += recent;
+        heatmapData.push({
+            lat: city.lat,
+            lng: city.lng,
+            count,
+            recent,
+            intensity: Math.random() * 5 + 5,           // 5-10
+            statuses: { pending: 0, investigating: 0, resolved: 0 }
+        });
+    });
+    // Set dummy statistics
+    if (document.getElementById('totalReports')) {
+        document.getElementById('totalReports').textContent = totalReports;
     }
-    
-    touchStartX = 0;
-    touchStartY = 0;
-}); 
+    if (document.getElementById('recentReports')) {
+        document.getElementById('recentReports').textContent = recentReports;
+    }
+}
+
+function toggleHeatMapMode() {
+    mapMode = mapMode === 'heat' ? 'marker' : 'heat';
+    updateMapDisplay();
+    // Update button label
+    const btn = document.getElementById('toggleHeatBtn');
+    if (mapMode === 'heat') {
+        btn.innerHTML = '<i class="fas fa-fire"></i> Toggle Heat Map';
+    } else {
+        btn.innerHTML = '<i class="fas fa-dot-circle"></i> Toggle Heat Map';
+    }
+}
+
+function setBaseLayer() {
+    if (baseLayer) {
+        map.removeLayer(baseLayer);
+    }
+    let styleId = mapMode === 'heat'
+        ? 'cmcqoyky600le01qv9vxx79wt' // dark style for heatmap
+        : 'clz64nvdk02ze01pa4pfih7ka'; // default style for markers
+    baseLayer = L.tileLayer(
+        `https://api.mapbox.com/styles/v1/mb5327/${styleId}/tiles/256/{z}/{x}/{y}@2x?access_token=${mapboxToken}`,
+        {
+            attribution: '© Mapbox © OpenStreetMap',
+            maxZoom: 18,
+            tileSize: 512,
+            zoomOffset: -1
+        }
+    ).addTo(map);
+}
+
+function updateMapDisplay() {
+    setBaseLayer();
+    if (heatmapLayer) map.removeLayer(heatmapLayer);
+    if (markerLayer) map.removeLayer(markerLayer);
+    if (mapMode === 'heat') {
+        displayHeatmap();
+    } else {
+        displayMarkers();
+    }
+}
+
+function getHeatmapCircleColor(intensity) {
+    // Use the same gradient as the heatmap
+    // 0.0: #00eaff, 0.3: #00bfff, 0.5: #00ff99, 0.7: #ffff00, 1.0: #ff0000
+    const stops = [
+        { stop: 0.0, color: [0,234,255] },   // #00eaff
+        { stop: 0.3, color: [0,191,255] },   // #00bfff
+        { stop: 0.5, color: [0,255,153] },   // #00ff99
+        { stop: 0.7, color: [255,255,0] },   // #ffff00
+        { stop: 1.0, color: [255,0,0] }      // #ff0000
+    ];
+    const t = Math.max(0, Math.min(1, intensity / 10));
+    for (let i = 1; i < stops.length; i++) {
+        if (t <= stops[i].stop) {
+            const prev = stops[i-1];
+            const next = stops[i];
+            const localT = (t - prev.stop) / (next.stop - prev.stop);
+            const r = Math.round(prev.color[0] + (next.color[0] - prev.color[0]) * localT);
+            const g = Math.round(prev.color[1] + (next.color[1] - prev.color[1]) * localT);
+            const b = Math.round(prev.color[2] + (next.color[2] - prev.color[2]) * localT);
+            return `rgb(${r},${g},${b})`;
+        }
+    }
+    return 'rgb(255,0,0)';
+}
+
+function displayMarkers() {
+    if (markerLayer) map.removeLayer(markerLayer);
+    if (heatmapData.length === 0) {
+        addDummyData();
+        if (heatmapData.length === 0) {
+            showNoData();
+            return;
+        }
+    }
+    markerLayer = L.layerGroup();
+    heatmapData.forEach(point => {
+        // Dot size grows with count (min 10, max 50)
+        const size = Math.max(10, Math.min(50, point.count * 5));
+        const color = getHeatmapCircleColor(point.intensity);
+        const marker = L.circleMarker([point.lat, point.lng], {
+            radius: size,
+            color: color,
+            fillColor: color,
+            fillOpacity: 0.5,
+            weight: 1
+        }).addTo(markerLayer);
+        marker.bindPopup(createHeatmapPopup(point));
+    });
+    markerLayer.addTo(map);
+    const bounds = L.latLngBounds(heatmapData.map(point => [point.lat, point.lng]));
+    map.fitBounds(bounds.pad(0.1));
+} 

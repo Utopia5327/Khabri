@@ -3,171 +3,226 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DrugFree India - Reports Map</title>
-    <meta name="description" content="View all reported drug abuse incidents on an interactive map">
-    <meta name="theme-color" content="#138808">
+    <title>Khabri: Report Activity Map</title>
+    <meta name="description" content="View drug abuse incident heat map and statistics">
+    <meta name="theme-color" content="#F97316">
     <link rel="manifest" href="/manifest.json">
     <link rel="stylesheet" href="styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
+        body {
+            background: #F9FAFB;
+            font-family: 'Poppins', 'Inter', Arial, sans-serif;
+            color: #1E293B;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            min-height: 100vh;
+            text-align: center;
+            padding: 0 16px;
+        }
+        .main-width {
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            width: 100%;
+        }
+        .header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 48px;
+            margin-bottom: 32px;
+        }
+        .header img {
+            max-width: 110px;
+            margin-bottom: 24px;
+        }
+        @media (max-width: 600px) {
+            .header img {
+                max-width: 70px;
+            }
+            .main-width {
+                max-width: 98vw;
+            }
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 0;
+        }
+        .logo i {
+            color: #F97316;
+            font-size: 2.2rem;
+        }
+        .logo h1 {
+            display: inline-block;
+            margin-left: 10px;
+            font-size: 40px;
+            font-weight: 700;
+            color: #1E293B;
+            vertical-align: middle;
+            letter-spacing: -1px;
+        }
+        .subtitle {
+            color: #1E293B;
+            font-size: 16px;
+            font-weight: 400;
+            margin-top: 24px;
+            margin-bottom: 0;
+            max-width: 700px;
+        }
+        .stats-container {
+            background: #fff;
+            border-radius: 16px;
+            padding: 32px 24px;
+            box-shadow: 0 2px 8px rgba(249, 115, 22, 0.06);
+            margin-bottom: 32px;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .stats-container h3 {
+            color: #F97316;
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 18px;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 18px;
+        }
+        .stat-item {
+            text-align: center;
+            padding: 18px 0 12px 0;
+            background: #fff;
+            border-radius: 8px;
+            border: 2px solid #F97316;
+            font-weight: 600;
+            transition: background 0.2s, color 0.2s, border 0.2s;
+            cursor: pointer;
+            box-shadow: none;
+        }
+        .stat-item:hover {
+            background: #F97316;
+            color: #fff;
+            border-color: #F97316;
+        }
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #138808;
+            display: block;
+            margin-bottom: 4px;
+            transition: color 0.2s;
+        }
+        .stat-item:hover .stat-number {
+            color: #fff;
+        }
+        .stat-label {
+            font-size: 1.1rem;
+            color: #666;
+            margin-top: 5px;
+            transition: color 0.2s;
+        }
+        .stat-item:hover .stat-label {
+            color: #fff;
+        }
+        .map-controls {
+            display: flex;
+            gap: 18px;
+            margin-bottom: 32px;
+            flex-wrap: nowrap;
+            justify-content: center;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .btn-secondary {
+            padding: 16px 24px;
+            font-size: 18px;
+            font-weight: 700;
+            border-radius: 10px;
+            background: #fff;
+            color: #F97316;
+            border: 2px solid #F97316;
+            cursor: pointer;
+            transition: background 0.2s, color 0.2s, border 0.2s, transform 0.2s;
+            box-shadow: 0 2px 8px rgba(249, 115, 22, 0.06);
+        }
+        .btn-secondary:hover {
+            background: #F97316;
+            color: #fff;
+            border-color: #F97316;
+            transform: scale(1.05);
+        }
         .map-container {
             height: 70vh;
             border-radius: 15px;
             overflow: hidden;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
             margin-bottom: 20px;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
         }
-        
         #map {
             height: 100%;
             width: 100%;
         }
-        
-        .map-controls {
+        .heatmap-legend {
+            background: #fff;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(249, 115, 22, 0.06);
+            margin-bottom: 32px;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .gradient-bar-container {
             display: flex;
+            flex-direction: column;
+            align-items: center;
             gap: 10px;
-            margin-bottom: 15px;
-            flex-wrap: wrap;
         }
-        
-        .stats-container {
-            background: white;
-            border-radius: 15px;
-            padding: 20px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-        }
-        
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 15px;
-        }
-        
-        .stat-item {
-            text-align: center;
-            padding: 15px;
-            background: #f8f9fa;
+        .gradient-bar {
+            width: 100%;
+            height: 20px;
+            background: linear-gradient(to right, #0066ff, #00ccff, #ffff00, #ff6600, #ff0000);
             border-radius: 10px;
-            border-left: 4px solid #138808;
+            border: 2px solid #fff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
-        
-        .stat-number {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #138808;
-            display: block;
-        }
-        
-        .stat-label {
-            font-size: 0.8rem;
-            color: #666;
-            margin-top: 5px;
-        }
-        
-        .reports-list {
-            background: white;
-            border-radius: 15px;
-            padding: 20px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            max-height: 300px;
-            overflow-y: auto;
-        }
-        
-        .report-item {
-            border: 1px solid #e1e5e9;
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 15px;
-            transition: all 0.3s ease;
-        }
-        
-        .report-item:hover {
-            border-color: #138808;
-            box-shadow: 0 2px 8px rgba(19, 136, 8, 0.1);
-        }
-        
-        .report-header {
+        .gradient-labels {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-        
-        .report-date {
-            font-size: 0.8rem;
-            color: #666;
-        }
-        
-        .report-status {
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 0.7rem;
+            width: 100%;
+            font-size: 1.1rem;
             font-weight: 500;
         }
-        
-        .status-pending {
-            background: #fff3cd;
-            color: #856404;
+        .label-low {
+            color: #0066ff;
         }
-        
-        .status-investigating {
-            background: #d1ecf1;
-            color: #0c5460;
+        .label-high {
+            color: #ff0000;
         }
-        
-        .status-resolved {
-            background: #d4edda;
-            color: #155724;
-        }
-        
-        .report-description {
-            color: #333;
-            margin-bottom: 10px;
-            line-height: 1.4;
-        }
-        
-        .report-image {
-            width: 100%;
-            max-width: 200px;
-            height: 120px;
-            object-fit: cover;
-            border-radius: 8px;
-            margin-top: 10px;
-        }
-        
-        .report-location {
-            font-size: 0.8rem;
-            color: #666;
-            margin-top: 8px;
-        }
-        
-        .loading-spinner {
+        .footer {
             text-align: center;
-            padding: 40px;
-            color: #666;
+            font-size: 0.98rem;
+            color: #aaa;
+            margin-top: 48px;
+            margin-bottom: 18px;
+            letter-spacing: 0.01em;
         }
-        
-        .loading-spinner i {
-            font-size: 2rem;
-            color: #138808;
-            margin-bottom: 10px;
-        }
-        
-        .no-reports {
-            text-align: center;
-            padding: 40px;
-            color: #666;
-        }
-        
-        .no-reports i {
-            font-size: 3rem;
-            color: #ccc;
-            margin-bottom: 15px;
-        }
-        
         .back-button {
             position: fixed;
             top: 20px;
@@ -187,27 +242,35 @@
             cursor: pointer;
             transition: all 0.3s ease;
         }
-        
         .back-button:hover {
             transform: scale(1.1);
             box-shadow: 0 6px 20px rgba(0,0,0,0.3);
         }
-        
         @media (max-width: 768px) {
             .map-container {
                 height: 50vh;
             }
-            
             .stats-grid {
                 grid-template-columns: repeat(2, 1fr);
             }
-            
             .back-button {
                 top: 10px;
                 left: 10px;
                 width: 40px;
                 height: 40px;
                 font-size: 1rem;
+            }
+        }
+        @media (max-width: 600px) {
+            .map-controls {
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+            .btn-secondary {
+                flex: 1 1 100%;
+                min-width: 120px;
+                font-size: 16px;
+                padding: 12px 8px;
             }
         }
     </style>
@@ -218,66 +281,67 @@
             <i class="fas fa-arrow-left"></i>
         </button>
         
-        <header class="header">
-            <div class="logo">
-                <i class="fas fa-map"></i>
-                <h1>Reports Map</h1>
+        <header class="header main-width" style="display:flex;flex-direction:column;align-items:center;">
+            <img src="logo.png" alt="Khabri Logo" style="max-width:110px;margin-bottom:24px;display:block;">
+            <div class="logo" style="justify-content:center;align-items:center;">
+                <h1 style="display:inline-block;margin-left:0;font-size:40px;font-weight:700;vertical-align:middle;">Khabri: Report Activity Map</h1>
             </div>
-            <p class="subtitle">View all reported drug abuse incidents</p>
+            <p class="subtitle">Explore real-time, crowdsourced reports of drug abuse incidents across India. Use this map to spot patterns and help make our cities safer.</p>
         </header>
 
         <main class="main-content">
-            <div class="stats-container">
-                <h3><i class="fas fa-chart-bar"></i> Statistics</h3>
+            <div class="stats-container main-width">
+                <h3 style="text-align:center;justify-content:center;">Statistics</h3>
                 <div class="stats-grid" id="statsGrid">
                     <div class="stat-item">
                         <span class="stat-number" id="totalReports">-</span>
                         <div class="stat-label">Total Reports</div>
                     </div>
                     <div class="stat-item">
-                        <span class="stat-number" id="pendingReports">-</span>
-                        <div class="stat-label">Pending</div>
+                        <span class="stat-number" id="recentReports">-</span>
+                        <div class="stat-label">Last 30 Days</div>
                     </div>
                     <div class="stat-item">
-                        <span class="stat-number" id="investigatingReports">-</span>
-                        <div class="stat-label">Investigating</div>
+                        <span class="stat-number" id="totalLocations">-</span>
+                        <div class="stat-label">Affected Areas</div>
                     </div>
-                    <div class="stat-item">
-                        <span class="stat-number" id="resolvedReports">-</span>
-                        <div class="stat-label">Resolved</div>
-                    </div>
+
                 </div>
             </div>
 
-            <div class="map-controls">
+            <div class="map-controls main-width">
                 <button class="btn-secondary" onclick="refreshData()">
                     <i class="fas fa-sync-alt"></i> Refresh
                 </button>
-                <button class="btn-secondary" onclick="centerOnUser()">
+                <button class="btn-secondary" onclick="goToMyLocation()">
                     <i class="fas fa-location-arrow"></i> My Location
                 </button>
-                <button class="btn-secondary" onclick="toggleHeatmap()">
-                    <i class="fas fa-fire"></i> Heatmap
+                <button class="btn-secondary" onclick="toggleHeatMapMode()">
+                    <i class="fas fa-fire"></i> Toggle Heat Map
                 </button>
             </div>
 
-            <div class="map-container">
+            <div class="map-container main-width">
                 <div id="map"></div>
             </div>
 
-            <div class="reports-list">
-                <h3><i class="fas fa-list"></i> Recent Reports</h3>
-                <div id="reportsList">
-                    <div class="loading-spinner">
-                        <i class="fas fa-spinner fa-spin"></i>
-                        <p>Loading reports...</p>
+            <div class="heatmap-legend main-width">
+                <h3><i class="fas fa-info-circle"></i> Reported Activity</h3>
+                <div class="gradient-bar-container">
+                    <div class="gradient-bar"></div>
+                    <div class="gradient-labels">
+                        <span class="label-low">Low</span>
+                        <span class="label-high">High</span>
                     </div>
                 </div>
             </div>
         </main>
     </div>
 
+    <footer class="footer">Designed by Manas Bhatia &copy; 2025. All rights reserved.</footer>
+
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
     <script src="map.js"></script>
 </body>
 </html> 
