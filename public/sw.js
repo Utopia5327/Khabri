@@ -1,58 +1,31 @@
-const CACHE_NAME = 'drugfree-india-v1';
-const urlsToCache = [
-  '/',
-  '/map',
-  '/styles.css',
-  '/app.js',
-  '/map.js',
-  'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap',
-  'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css',
-  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
-  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js'
-];
+// Minimal service worker - no caching to avoid chrome-extension errors
+console.log('Service worker loaded (minimal version)');
 
-// Install event - cache resources
+// Install event - do nothing
 self.addEventListener('install', event => {
+  console.log('Service worker installed');
+  self.skipWaiting();
+});
+
+// Activate event - clean up old caches
+self.addEventListener('activate', event => {
+  console.log('Service worker activated');
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => {
-        console.log('Opened cache');
-        return cache.addAll(urlsToCache);
-      })
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames.map(cacheName => {
+          console.log('Deleting old cache:', cacheName);
+          return caches.delete(cacheName);
+        })
+      );
+    })
   );
 });
 
-// Fetch event - serve from cache when offline
+// Fetch event - pass through all requests (no caching)
 self.addEventListener('fetch', event => {
-  event.respondWith(
-    caches.match(event.request)
-      .then(response => {
-        // Return cached version or fetch from network
-        if (response) {
-          return response;
-        }
-        
-        // Clone the request because it's a stream
-        const fetchRequest = event.request.clone();
-        
-        return fetch(fetchRequest).then(response => {
-          // Check if we received a valid response
-          if (!response || response.status !== 200 || response.type !== 'basic') {
-            return response;
-          }
-          
-          // Clone the response because it's a stream
-          const responseToCache = response.clone();
-          
-          caches.open(CACHE_NAME)
-            .then(cache => {
-              cache.put(event.request, responseToCache);
-            });
-          
-          return response;
-        });
-      })
-  );
+  // Do nothing - let the browser handle all requests normally
+  return;
 });
 
 // Activate event - clean up old caches
@@ -82,8 +55,6 @@ self.addEventListener('sync', event => {
 self.addEventListener('push', event => {
   const options = {
     body: event.data ? event.data.text() : 'New drug abuse report in your area',
-    icon: '/icon-192x192.png',
-    badge: '/badge-72x72.png',
     vibrate: [100, 50, 100],
     data: {
       dateOfArrival: Date.now(),
@@ -92,13 +63,11 @@ self.addEventListener('push', event => {
     actions: [
       {
         action: 'explore',
-        title: 'View Report',
-        icon: '/icon-192x192.png'
+        title: 'View Report'
       },
       {
         action: 'close',
-        title: 'Close',
-        icon: '/icon-192x192.png'
+        title: 'Close'
       }
     ]
   };

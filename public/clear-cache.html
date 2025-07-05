@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clear Cache</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 5px;
+            background-color: #f8f9fa;
+            border-left: 4px solid #007bff;
+        }
+        .success {
+            background-color: #d4edda;
+            border-left-color: #28a745;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border-left-color: #dc3545;
+            color: #721c24;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧹 Clear All Caches</h1>
+        <p>This page will clear all browser caches, service workers, and storage to resolve any caching issues.</p>
+        
+        <button id="clearBtn" onclick="clearAllCaches()">Clear All Caches</button>
+        <button onclick="window.location.href='/'">Go to Main App</button>
+        
+        <div id="status" class="status">
+            Click "Clear All Caches" to start...
+        </div>
+    </div>
+
+    <script>
+        async function clearAllCaches() {
+            const status = document.getElementById('status');
+            const clearBtn = document.getElementById('clearBtn');
+            
+            clearBtn.disabled = true;
+            clearBtn.textContent = 'Clearing...';
+            
+            try {
+                status.innerHTML = 'Starting cache clearing process...';
+                
+                // 1. Unregister service workers
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    for(let registration of registrations) {
+                        await registration.unregister();
+                        console.log('Service Worker unregistered');
+                    }
+                    status.innerHTML += '<br>✓ Service Workers unregistered';
+                }
+                
+                // 2. Clear all caches
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    await Promise.all(
+                        cacheNames.map(cacheName => caches.delete(cacheName))
+                    );
+                    console.log('All caches cleared');
+                    status.innerHTML += '<br>✓ All caches cleared';
+                }
+                
+                // 3. Clear IndexedDB
+                if ('indexedDB' in window) {
+                    try {
+                        const databases = await indexedDB.databases();
+                        for (const db of databases) {
+                            await indexedDB.deleteDatabase(db.name);
+                        }
+                        status.innerHTML += '<br>✓ IndexedDB cleared';
+                    } catch (e) {
+                        status.innerHTML += '<br>⚠ IndexedDB clear failed (this is normal in some browsers)';
+                    }
+                }
+                
+                // 4. Clear localStorage
+                localStorage.clear();
+                status.innerHTML += '<br>✓ localStorage cleared';
+                
+                // 5. Clear sessionStorage
+                sessionStorage.clear();
+                status.innerHTML += '<br>✓ sessionStorage cleared';
+                
+                status.className = 'status success';
+                status.innerHTML += '<br><br><strong>🎉 All caches cleared successfully!</strong>';
+                status.innerHTML += '<br>You can now close this tab and refresh your main application.';
+                
+                clearBtn.textContent = 'Caches Cleared!';
+                
+            } catch (error) {
+                console.error('Error clearing caches:', error);
+                status.className = 'status error';
+                status.innerHTML += '<br><strong>❌ Error:</strong> ' + error.message;
+                clearBtn.disabled = false;
+                clearBtn.textContent = 'Try Again';
+            }
+        }
+    </script>
+</body>
+</html> 

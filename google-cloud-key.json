@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "drugfree-india",
+  "private_key_id": "4b81016179668aad86db3dc4031ad4f83848d663",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQC00vIQAMr/HSwQ\n/tRaaOUwT/bGIFcHKhPoakYZb+H04UNB+bX6RzaM1RxHjIOLzVEv5pXMHtFd1yiN\n1sTLftIqDzhyN7qjalqbJkCZSZ+wEKuO7c5NCibTSQAGhsM1Jir7/Y2KGtgcybU4\nLxSSjZTwGo7W6gj6vZd6HGgA89FL41eSZUTee3kR6pMJs77+2/jQphrxeyEY9xkq\nY5vCtMbnhhOu+JxcLqg+tF+SonAWiOHX3JBjttkMtv3p6yFszVe8KwQkLuzh6pk+\nqd7NNFFDPQFfaVwf+RmW2qLQRx5QAkQe//9gAMWJ6zGtOzPpuCXkNDqZV6oA6NQJ\nhPA10k0XAgMBAAECggEAB3JGaJ/3vBYXSfiMhc/wXD3MGPBHqoeyO9h13DdOHqJQ\n0uc1y2w3qV4J+kJQP9IWh/qewZdP95Apid8bHzww6xgnCBZrwlivXtiY7BcVkzpk\ng5AfIO9hlkLZKZZOyfdb6XZRaAC0qfQpLnqghhZ8LdUSJnSLJnQ8nYPiSTkWgzb0\nMKoSe6gEg2Xw29Up69XnWGtRMMbprJSCnnetGj3r55OQyUAoHpgbEC+gNkURJ1zs\nRGMQ114HViQHymiygMWeRev/G96k7c6rE0AmLCTnr7eNCuQS2NCU0nTHnAsKT8RO\ngpz3O18aVTFliNNTRe0WPJ5FMRET46MyK/R4WBgtNQKBgQDtlg7L5ay4Br7Rgide\nkLuvks8KTMvAw9LMRz5Gu2npZ7PkdskJP65gCsi0W+2JOCDpyBXo9LgQJoLERbYa\nE3XsKplKuf5lmmGVDGnzxmf3R6uczeEZLJCCyJjU7eR1opspjkCxwXRCyocrVouJ\nByM0fwkiJ5GxQ+ChYx8HPZpbwwKBgQDC1qvD+y3Qq9RSbWnXRM0o0VNQ0fP+SLK9\nMtwk7bXxi7JXfMWiDxbZx18uZLN4boApIstsL8lESmJlE0jQgmsZNtRz0bNel0Si\n8fauToyf3TEKywD9ivKPRuNeeigBHfg09XBhzrQwQhyj12csKl6LIxGpGWO8oHjr\notfl+bv4HQKBgEVk3PGFJguiPL3o7CLc11US5lI12BV3nOx5qqDyQJ8h4RNL9rAy\n33XB8JlteFXqBQMDpBKk19YvyWYWjnfTU1AlqRyAcuOuUe487/156Af78Q4dvC+k\nKploies3iNErK3LZz9+bh5+ylAR+hMcDRK8io8JMGGvUTZoV34w33AwNAoGAQ9oM\nkUCc8OmWFGqEDHKqW8eiEyg6p1hb3qWior2hug+jOPJ7xPcqRwc2b2qkUZFx0mGK\npA90MPMSlw6DMhHpCCvfCsKBi7R0M6a9+G/kaxvVo2OU4bcMx7axIcq6ucDdGlxL\nGdSpTZEIdkpiZLAQorXAxbnQ0PS1h6H7O9yfiEUCgYAGGcks0YQIiHRqmM2cqSTu\nItdjVC31zXLWobPwhYvmqRRTE+yVE0GmHBmfbONAlumUOI/BfpuA/GzfW5YQuBDN\nEY3THCmOulSCWemaiDymFF4Kh3wIKIzYrat+WewMlsqbmmov5KfHJUtReGYqDjlk\n7AMskPCwcEH2APX790WmwA==\n-----END PRIVATE KEY-----\n",
+  "client_email": "drugfree-india-storage@drugfree-india.iam.gserviceaccount.com",
+  "client_id": "114305314961847977313",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/drugfree-india-storage%40drugfree-india.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}

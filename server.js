@@ -4,16 +4,25 @@ const multer = require('multer');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
+const { Storage } = require('@google-cloud/storage');
 require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Initialize Google Cloud Storage
+const storage = new Storage({
+  projectId: process.env.GOOGLE_CLOUD_PROJECT_ID,
+  keyFilename: process.env.GOOGLE_CLOUD_KEY_FILE || 'google-cloud-key.json'
+});
+
+const bucketName = process.env.GOOGLE_CLOUD_BUCKET_NAME || 'drugfree-india-uploads';
+const bucket = storage.bucket(bucketName);
+
 // Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
-app.use('/uploads', express.static('uploads'));
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/drugfree-india', {
@@ -27,8 +36,8 @@ db.once('open', () => {
   console.log('Connected to MongoDB');
 });
 
-// Multer configuration for image uploads
-const storage = multer.diskStorage({
+// Multer configuration for temporary local storage
+const localStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     const uploadDir = 'uploads';
     if (!fs.existsSync(uploadDir)) {
@@ -43,7 +52,7 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({
-  storage: storage,
+  storage: localStorage,
   limits: {
     fileSize: 5 * 1024 * 1024 // 5MB limit
   },
@@ -55,6 +64,35 @@ const upload = multer({
     }
   }
 });
+
+// Function to upload file to Google Cloud Storage
+async function uploadToGCS(filePath, fileName) {
+  try {
+    const options = {
+      destination: fileName,
+      metadata: {
+        cacheControl: 'public, max-age=31536000',
+      },
+    };
+
+    await bucket.upload(filePath, options);
+    
+    // Get the public URL (bucket must be configured for public access)
+    const publicUrl = `https://storage.googleapis.com/${bucketName}/${fileName}`;
+    
+    // Clean up local file
+    fs.unlinkSync(filePath);
+    
+    return publicUrl;
+  } catch (error) {
+    console.error('Error uploading to GCS:', error);
+    // Clean up local file even if upload fails
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+    throw error;
+  }
+}
 
 // Report Schema
 const reportSchema = new mongoose.Schema({
@@ -126,9 +164,18 @@ app.post('/api/report', upload.single('photo'), async (req, res) => {
       return res.status(400).json({ error: 'Description, latitude, and longitude are required' });
     }
 
+    // Upload to Google Cloud Storage
+    let imageUrl;
+    try {
+      imageUrl = await uploadToGCS(req.file.path, req.file.filename);
+    } catch (uploadError) {
+      console.error('GCS upload failed:', uploadError);
+      return res.status(500).json({ error: 'Failed to upload image to cloud storage' });
+    }
+
     const report = new Report({
       description,
-      imageUrl: `/uploads/${req.file.filename}`,
+      imageUrl,
       location: {
         type: 'Point',
         coordinates: [parseFloat(longitude), parseFloat(latitude)]
@@ -224,6 +271,26 @@ app.get('/api/reports/nearby', async (req, res) => {
   }
 });
 
+// DELETE /api/reports/cleanup - Remove reports with local URLs (for cleanup)
+app.delete('/api/reports/cleanup', async (req, res) => {
+  try {
+    // Find and delete reports that have local URLs (starting with /uploads/)
+    const result = await Report.deleteMany({
+      imageUrl: { $regex: '^/uploads/' }
+    });
+
+    res.json({
+      success: true,
+      message: `Cleaned up ${result.deletedCount} reports with local URLs`,
+      deletedCount: result.deletedCount
+    });
+
+  } catch (error) {
+    console.error('Error cleaning up reports:', error);
+    res.status(500).json({ error: 'Failed to clean up reports' });
+  }
+});
+
 // Error handling middleware
 app.use((error, req, res, next) => {
   if (error instanceof multer.MulterError) {
@@ -239,4 +306,5 @@ app.use((error, req, res, next) => {
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Visit http://localhost:${PORT} to access the application`);
+  console.log(`Google Cloud Storage bucket: ${bucketName}`);
 }); 

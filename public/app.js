@@ -289,18 +289,18 @@ window.addEventListener('offline', function() {
     showError('You are currently offline. Please check your internet connection.');
 });
 
-// Service Worker registration for PWA capabilities
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', function() {
-        navigator.serviceWorker.register('/sw.js')
-            .then(function(registration) {
-                console.log('ServiceWorker registration successful');
-            })
-            .catch(function(err) {
-                console.log('ServiceWorker registration failed');
-            });
-    });
-}
+// Service Worker registration disabled to avoid chrome-extension errors
+// if ('serviceWorker' in navigator) {
+//     window.addEventListener('load', function() {
+//         navigator.serviceWorker.register('/sw.js')
+//             .then(function(registration) {
+//                 console.log('ServiceWorker registration successful');
+//             })
+//             .catch(function(err) {
+//                 console.log('ServiceWorker registration failed');
+//             });
+//     });
+// }
 
 // Add vibration feedback for mobile devices
 function vibrate() {

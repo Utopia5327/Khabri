@@ -123,31 +123,31 @@ ngrok http 3000
 
 ## 🚀 Deployment
 
-### Option 1: Render (Recommended for Free Tier)
-1. Connect your GitHub repository to Render
-2. Create a new Web Service
-3. Set build command: `npm install`
-4. Set start command: `npm start`
-5. Add environment variables in Render dashboard
-6. Deploy!
+### Quick Deploy to Render.com (Recommended)
 
-### Option 2: Railway
-1. Connect GitHub repository to Railway
-2. Add environment variables
-3. Deploy automatically
+1. **Push your code to GitHub** with the included `render.yaml` file
+2. **Set up MongoDB Atlas** (free tier) for production database
+3. **Set up Google Cloud Storage** for image uploads
+4. **Deploy on Render.com** using the Blueprint option
 
-### Option 3: Fly.io
-1. Install Fly CLI
-2. Run `fly launch`
-3. Set environment variables
-4. Deploy with `fly deploy`
+For detailed deployment instructions, see:
+- 📋 [Deployment Checklist](DEPLOYMENT_CHECKLIST.md)
+- 📖 [Complete Deployment Guide](DEPLOYMENT.md)
 
 ### Environment Variables for Production
 ```bash
-MONGODB_URI=your-production-mongodb-uri
-PORT=3000
 NODE_ENV=production
+PORT=10000
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/drugfree-india
+GOOGLE_CLOUD_PROJECT_ID=your-project-id
+GOOGLE_CLOUD_BUCKET_NAME=drugfree-india-uploads
+GOOGLE_CLOUD_KEY_FILE=google-cloud-key.json
 ```
+
+### Alternative Deployment Options
+- **Railway**: Connect GitHub repo and deploy automatically
+- **Fly.io**: Use Fly CLI for deployment
+- **Heroku**: Traditional deployment option
 
 ## 📊 API Endpoints
 

@@ -14,10 +14,28 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Initialize Leaflet map
 function initializeMap() {
-    // Center on India (approximate center)
-    const indiaCenter = [20.5937, 78.9629];
+    // Start with India center as default
+    let defaultCenter = [20.5937, 78.9629]; // India center
+    let defaultZoom = 5;
     
-    map = L.map('map').setView(indiaCenter, 5);
+    // Store user location for later use (but don't center on it immediately)
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                userLocation = {
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude
+                };
+                console.log('User location stored for later use');
+            },
+            function(error) {
+                console.log('Could not get user location');
+            },
+            { timeout: 3000 } // 3 second timeout
+        );
+    }
+    
+    map = L.map('map').setView(defaultCenter, defaultZoom);
     
     // Add OpenStreetMap tiles
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -36,10 +54,9 @@ function addMapControls() {
         position: 'bottomright'
     }).addTo(map);
     
-    // Fullscreen control
-    L.control.fullscreen({
-        position: 'bottomright'
-    }).addTo(map);
+    // Note: Fullscreen control requires additional plugin
+    // For now, we'll skip it to avoid errors
+    // To add fullscreen support, include: https://unpkg.com/leaflet.fullscreen@2.4.0/Control.FullScreen.js
 }
 
 // Load reports from the API
@@ -50,6 +67,7 @@ async function loadReports() {
         
         if (data.success) {
             reports = data.reports;
+            console.log(`Loaded ${reports.length} reports from API`);
             displayReports();
             updateStatistics();
         } else {
@@ -80,6 +98,16 @@ function displayReports() {
     if (markers.length > 0) {
         const group = new L.featureGroup(markers);
         map.fitBounds(group.getBounds().pad(0.1));
+        console.log(`Map centered on ${markers.length} reports`);
+    } else {
+        // If no reports, center on India or user location if available
+        if (userLocation) {
+            map.setView([userLocation.lat, userLocation.lng], 10);
+            console.log('Map centered on user location (no reports)');
+        } else {
+            map.setView([20.5937, 78.9629], 5); // India center
+            console.log('Map centered on India (no reports)');
+        }
     }
 }
 
@@ -88,6 +116,8 @@ function addMarker(report) {
     const coordinates = report.location.coordinates;
     const lat = coordinates[1];
     const lng = coordinates[0];
+    
+    console.log(`Adding marker for report ${report.id} at [${lat}, ${lng}]`);
     
     // Create custom icon based on status
     const icon = createStatusIcon(report.status);
