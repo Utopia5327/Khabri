@@ -76,3 +76,5 @@ Thumbs.db
 google-cloud-key.json
 
 scripts/deleteAllReports.js
+
+!public/logo.png
