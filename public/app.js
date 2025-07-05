@@ -100,6 +100,12 @@ function handleLocationSuccess(position) {
     
     updateLocationStatus(`Location captured ✓ (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`, 'success');
     updateSubmitButton();
+
+    if (currentLocation && !isLocationInIndia(currentLocation.latitude, currentLocation.longitude)) {
+        showLocationRestrictionModal();
+        document.getElementById('reportForm').style.pointerEvents = 'none';
+        document.getElementById('reportForm').style.opacity = '0.5';
+    }
 }
 
 // Handle location error
@@ -325,4 +331,30 @@ if (window.history.replaceState) {
 
 function isLocationInIndia(lat, lng) {
     return lat >= 6 && lat <= 37 && lng >= 68 && lng <= 97;
+}
+
+function showLocationRestrictionModal() {
+    let modal = document.getElementById('locationRestrictionModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'locationRestrictionModal';
+        modal.style.position = 'fixed';
+        modal.style.top = '0';
+        modal.style.left = '0';
+        modal.style.width = '100vw';
+        modal.style.height = '100vh';
+        modal.style.background = 'rgba(0,0,0,0.5)';
+        modal.style.display = 'flex';
+        modal.style.alignItems = 'center';
+        modal.style.justifyContent = 'center';
+        modal.style.zIndex = '9999';
+        modal.innerHTML = `
+            <div style="background: #fff; padding: 32px 24px; border-radius: 16px; max-width: 400px; text-align: center; box-shadow: 0 4px 24px rgba(0,0,0,0.15);">
+                <h2 style="color: #F97316; margin-bottom: 16px;">Location Restricted</h2>
+                <p style="color: #1E293B; font-size: 1.1rem;">Reporting is only allowed within India.<br>Your current location is outside India.</p>
+                <button onclick="document.getElementById('locationRestrictionModal').remove()" style="margin-top: 18px; padding: 10px 24px; background: #F97316; color: #fff; border: none; border-radius: 8px; font-weight: 700; font-size: 1rem; cursor: pointer;">Close</button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
 } 
