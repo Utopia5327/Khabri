@@ -74,3 +74,5 @@ Thumbs.db
 *.temp 
 
 google-cloud-key.json
+
+scripts/deleteAllReports.js
