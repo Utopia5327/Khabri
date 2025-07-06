@@ -101,11 +101,12 @@ function handleLocationSuccess(position) {
     updateLocationStatus(`Location captured ✓ (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`, 'success');
     updateSubmitButton();
 
-    if (currentLocation && !isLocationInIndia(currentLocation.latitude, currentLocation.longitude)) {
-        showLocationRestrictionModal();
-        document.getElementById('reportForm').style.pointerEvents = 'none';
-        document.getElementById('reportForm').style.opacity = '0.5';
-    }
+    // TEMPORARILY DISABLED FOR SCREEN RECORDING
+    // if (currentLocation && !isLocationInIndia(currentLocation.latitude, currentLocation.longitude)) {
+    //     showLocationRestrictionModal();
+    //     document.getElementById('reportForm').style.pointerEvents = 'none';
+    //     document.getElementById('reportForm').style.opacity = '0.5';
+    // }
 }
 
 // Handle location error
@@ -196,10 +197,11 @@ async function handleFormSubmit(event) {
         return;
     }
     
-    if (!isLocationInIndia(currentLocation.latitude, currentLocation.longitude)) {
-        showError('Reporting is only allowed within India.');
-        return;
-    }
+    // TEMPORARILY DISABLED FOR SCREEN RECORDING
+    // if (!isLocationInIndia(currentLocation.latitude, currentLocation.longitude)) {
+    //     showError('Reporting is only allowed within India.');
+    //     return;
+    // }
     
     // Disable form and show loading state
     setFormLoading(true);

@@ -164,9 +164,10 @@ app.post('/api/report', upload.single('photo'), async (req, res) => {
       return res.status(400).json({ error: 'Description, latitude, and longitude are required' });
     }
 
-    if (!isLocationInIndia(parseFloat(latitude), parseFloat(longitude))) {
-      return res.status(400).json({ error: 'Reporting is only allowed within India.' });
-    }
+    // TEMPORARILY DISABLED FOR SCREEN RECORDING
+    // if (!isLocationInIndia(parseFloat(latitude), parseFloat(longitude))) {
+    //   return res.status(400).json({ error: 'Reporting is only allowed within India.' });
+    // }
 
     // Upload to Google Cloud Storage
     let imageUrl;

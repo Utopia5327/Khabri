@@ -212,9 +212,10 @@ function getUserLocation() {
                     lng: position.coords.longitude
                 };
                 console.log('User location stored');
-                if (userLocation && !isLocationInIndia(userLocation.lat, userLocation.lng)) {
-                    showLocationRestrictionModal();
-                }
+                // TEMPORARILY DISABLED FOR SCREEN RECORDING
+                // if (userLocation && !isLocationInIndia(userLocation.lat, userLocation.lng)) {
+                //     showLocationRestrictionModal();
+                // }
             },
             function(error) {
                 console.log('Could not get user location:', error);
