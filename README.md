@@ -1,4 +1,4 @@
-# DrugFree India - Interactive Drug Abuse Reporting Platform
+# Khabri - Interactive Drug Abuse Reporting Platform
 
 A mobile-optimized web application that allows citizens in India to report drug abuse incidents with photos, geolocation, and detailed descriptions. The platform provides authorities with real-time data visualization and mapping capabilities to address the growing drug abuse problem among youth.
 
@@ -39,7 +39,7 @@ A mobile-optimized web application that allows citizens in India to report drug 
 1. **Clone the repository**
    ```bash
    git clone <repository-url>
-   cd DrugfreeIndia
+   cd Khabri
    ```
 
 2. **Install dependencies**
@@ -199,7 +199,7 @@ Get reports within radius
 
 ### Project Structure
 ```
-DrugfreeIndia/
+Khabri/
 ├── public/                 # Frontend files
 │   ├── index.html         # Main reporting page
 │   ├── map.html           # Map visualization page
