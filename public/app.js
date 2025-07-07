@@ -25,14 +25,95 @@ function initializeApp() {
     getLocationBtn.addEventListener('click', getCurrentLocation);
     reportForm.addEventListener('submit', handleFormSubmit);
     
+    // Check camera permissions on mobile
+    checkCameraPermissions();
+    
     // Try to get location automatically
     getCurrentLocation();
+}
+
+// Check camera permissions and provide guidance
+function checkCameraPermissions() {
+    // Check if we're on a mobile device
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    if (isMobile) {
+        // Check if we're on HTTPS
+        if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+            console.warn('Camera access requires HTTPS on mobile devices');
+            showCameraPermissionModal('HTTPS Required', 'Camera access requires a secure connection (HTTPS). Please ensure you are accessing this site securely.');
+        }
+        
+        // Check if camera permissions are available
+        if (navigator.permissions && navigator.permissions.query) {
+            navigator.permissions.query({ name: 'camera' }).then(result => {
+                if (result.state === 'denied') {
+                    console.log('Camera permission denied');
+                    showCameraPermissionModal('Camera Access Blocked', 'Camera access is currently blocked. Please enable camera permissions in your browser settings to use this feature.');
+                }
+            });
+        }
+    }
+}
+
+// Show camera permission guidance modal
+function showCameraPermissionModal(title, message) {
+    let modal = document.getElementById('cameraPermissionModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'cameraPermissionModal';
+        modal.style.position = 'fixed';
+        modal.style.top = '0';
+        modal.style.left = '0';
+        modal.style.width = '100vw';
+        modal.style.height = '100vh';
+        modal.style.background = 'rgba(0,0,0,0.5)';
+        modal.style.display = 'flex';
+        modal.style.alignItems = 'center';
+        modal.style.justifyContent = 'center';
+        modal.style.zIndex = '9999';
+        modal.innerHTML = `
+            <div style="background: #fff; padding: 32px 24px; border-radius: 16px; max-width: 400px; text-align: center; box-shadow: 0 4px 24px rgba(0,0,0,0.15);">
+                <h2 style="color: #F97316; margin-bottom: 16px;">${title}</h2>
+                <p style="color: #1E293B; font-size: 1.1rem; margin-bottom: 20px;">${message}</p>
+                <div style="background: #f8f9fa; padding: 16px; border-radius: 8px; text-align: left; margin-bottom: 20px;">
+                    <h4 style="margin: 0 0 12px 0; color: #1E293B;">How to enable camera access:</h4>
+                    <p style="margin: 0 0 8px 0; font-size: 0.9rem; color: #6B7280;"><strong>Chrome/Android:</strong></p>
+                    <ol style="margin: 0 0 12px 0; padding-left: 20px; font-size: 0.9rem; color: #6B7280;">
+                        <li>Tap the lock icon in address bar</li>
+                        <li>Tap "Site settings"</li>
+                        <li>Change "Camera" to "Allow"</li>
+                        <li>Refresh the page</li>
+                    </ol>
+                    <p style="margin: 0 0 8px 0; font-size: 0.9rem; color: #6B7280;"><strong>Safari/iOS:</strong></p>
+                    <ol style="margin: 0 0 12px 0; padding-left: 20px; font-size: 0.9rem; color: #6B7280;">
+                        <li>Go to Settings > Safari</li>
+                        <li>Tap "Camera"</li>
+                        <li>Select "Allow" for this website</li>
+                        <li>Refresh the page</li>
+                    </ol>
+                </div>
+                <button onclick="document.getElementById('cameraPermissionModal').remove()" style="margin-top: 8px; padding: 10px 24px; background: #F97316; color: #fff; border: none; border-radius: 8px; font-weight: 700; font-size: 1rem; cursor: pointer;">Got it</button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
 }
 
 // Handle photo selection
 function handlePhotoSelect(event) {
     const file = event.target.files[0];
-    if (!file) return;
+    if (!file) {
+        // User cancelled or no file selected
+        console.log('No file selected or camera access cancelled');
+        
+        // Check if this might be a permission issue
+        setTimeout(() => {
+            checkCameraAccessAfterClick();
+        }, 1000);
+        
+        return;
+    }
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
@@ -49,6 +130,26 @@ function handlePhotoSelect(event) {
     photoFile = file;
     displayPhotoPreview(file);
     updateSubmitButton();
+}
+
+// Check camera access after a failed attempt
+function checkCameraAccessAfterClick() {
+    // If we're on mobile and no file was selected, it might be a permission issue
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    if (isMobile && !photoFile) {
+        // Check if camera permissions are blocked
+        if (navigator.permissions && navigator.permissions.query) {
+            navigator.permissions.query({ name: 'camera' }).then(result => {
+                if (result.state === 'denied') {
+                    showCameraPermissionModal('Camera Access Required', 'The camera didn\'t open. This might be because camera access is blocked. Please enable camera permissions to take photos.');
+                }
+            });
+        } else {
+            // Fallback: show general guidance if permissions API is not available
+            showCameraPermissionModal('Camera Access Required', 'The camera didn\'t open. Please make sure camera permissions are enabled for this website in your browser settings.');
+        }
+    }
 }
 
 // Display photo preview
@@ -101,12 +202,11 @@ function handleLocationSuccess(position) {
     updateLocationStatus(`Location captured ✓ (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`, 'success');
     updateSubmitButton();
 
-    // TEMPORARILY DISABLED FOR SCREEN RECORDING
-    // if (currentLocation && !isLocationInIndia(currentLocation.latitude, currentLocation.longitude)) {
-    //     showLocationRestrictionModal();
-    //     document.getElementById('reportForm').style.pointerEvents = 'none';
-    //     document.getElementById('reportForm').style.opacity = '0.5';
-    // }
+    if (currentLocation && !isLocationInIndia(currentLocation.latitude, currentLocation.longitude)) {
+        showLocationRestrictionModal();
+        document.getElementById('reportForm').style.pointerEvents = 'none';
+        document.getElementById('reportForm').style.opacity = '0.5';
+    }
 }
 
 // Handle location error
@@ -197,11 +297,10 @@ async function handleFormSubmit(event) {
         return;
     }
     
-    // TEMPORARILY DISABLED FOR SCREEN RECORDING
-    // if (!isLocationInIndia(currentLocation.latitude, currentLocation.longitude)) {
-    //     showError('Reporting is only allowed within India.');
-    //     return;
-    // }
+    if (!isLocationInIndia(currentLocation.latitude, currentLocation.longitude)) {
+        showError('Reporting is only allowed within India.');
+        return;
+    }
     
     // Disable form and show loading state
     setFormLoading(true);

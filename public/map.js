@@ -75,11 +75,8 @@ function displayHeatmap() {
         map.removeLayer(heatmapLayer);
     }
     if (heatmapData.length === 0) {
-        addDummyData();
-        if (heatmapData.length === 0) {
-            showNoData();
-            return;
-        }
+        showNoData();
+        return;
     }
     // Brighter, more visible heatmap for dark background
     const heatData = heatmapData.map(point => [
@@ -169,26 +166,6 @@ function createHeatmapPopup(point) {
 
 // Update statistics display
 async function updateStatistics() {
-    // --- DUMMY DATA LOGIC: REMOVE BEFORE PRODUCTION ---
-    const dummyCities = [
-        { lat: 28.6139, lng: 77.2090 }, // Delhi
-        { lat: 19.0760, lng: 72.8777 }, // Mumbai
-        { lat: 26.9124, lng: 75.7873 }, // Jaipur
-        { lat: 15.2993, lng: 74.1240 }  // Goa
-    ];
-    const isDummy =
-        heatmapData.length === 4 &&
-        heatmapData.every((pt, i) =>
-            Math.abs(pt.lat - dummyCities[i].lat) < 0.01 &&
-            Math.abs(pt.lng - dummyCities[i].lng) < 0.01
-        );
-    if (isDummy) {
-        // Use the already-set dummy stats
-        document.getElementById('totalLocations').textContent = heatmapData.length;
-        // totalReports and recentReports are already set by addDummyData
-        return;
-    }
-    // --- END DUMMY DATA LOGIC ---
     const stats = await loadStatistics();
     if (stats) {
         document.getElementById('totalReports').textContent = stats.total;
@@ -212,10 +189,9 @@ function getUserLocation() {
                     lng: position.coords.longitude
                 };
                 console.log('User location stored');
-                // TEMPORARILY DISABLED FOR SCREEN RECORDING
-                // if (userLocation && !isLocationInIndia(userLocation.lat, userLocation.lng)) {
-                //     showLocationRestrictionModal();
-                // }
+                if (userLocation && !isLocationInIndia(userLocation.lat, userLocation.lng)) {
+                    showLocationRestrictionModal();
+                }
             },
             function(error) {
                 console.log('Could not get user location:', error);
@@ -350,41 +326,7 @@ document.addEventListener('keydown', function(event) {
     }
 });
 
-// --- DUMMY DATA GENERATION FOR TESTING ---
-function addDummyData() {
-    // Only add if no real data
-    if (heatmapData.length > 0) return;
-    // Major Indian cities: Delhi, Mumbai, Jaipur, Goa
-    const cities = [
-        { name: 'Delhi', lat: 28.6139, lng: 77.2090 },
-        { name: 'Mumbai', lat: 19.0760, lng: 72.8777 },
-        { name: 'Jaipur', lat: 26.9124, lng: 75.7873 },
-        { name: 'Goa', lat: 15.2993, lng: 74.1240 }
-    ];
-    let totalReports = 0;
-    let recentReports = 0;
-    cities.forEach(city => {
-        const count = Math.floor(Math.random() * 10) + 5; // 5-14
-        const recent = Math.floor(Math.random() * 5) + 1;  // 1-5
-        totalReports += count;
-        recentReports += recent;
-        heatmapData.push({
-            lat: city.lat,
-            lng: city.lng,
-            count,
-            recent,
-            intensity: Math.random() * 5 + 5,           // 5-10
-            statuses: { pending: 0, investigating: 0, resolved: 0 }
-        });
-    });
-    // Set dummy statistics
-    if (document.getElementById('totalReports')) {
-        document.getElementById('totalReports').textContent = totalReports;
-    }
-    if (document.getElementById('recentReports')) {
-        document.getElementById('recentReports').textContent = recentReports;
-    }
-}
+// Dummy data function removed for production
 
 function toggleHeatMapMode() {
     mapMode = mapMode === 'heat' ? 'marker' : 'heat';

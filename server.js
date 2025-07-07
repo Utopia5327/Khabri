@@ -7,6 +7,9 @@ const fs = require('fs');
 const { Storage } = require('@google-cloud/storage');
 require('dotenv').config();
 
+// Simple rate limiting for production
+const rateLimit = require('express-rate-limit');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -19,10 +22,22 @@ const storage = new Storage({
 const bucketName = process.env.GOOGLE_CLOUD_BUCKET_NAME || 'drugfree-india-uploads';
 const bucket = storage.bucket(bucketName);
 
+// Rate limiting middleware
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // limit each IP to 10 requests per windowMs
+  message: 'Too many requests from this IP, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
+
+// Apply rate limiting to API routes
+app.use('/api/', limiter);
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/drugfree-india', {
@@ -164,10 +179,9 @@ app.post('/api/report', upload.single('photo'), async (req, res) => {
       return res.status(400).json({ error: 'Description, latitude, and longitude are required' });
     }
 
-    // TEMPORARILY DISABLED FOR SCREEN RECORDING
-    // if (!isLocationInIndia(parseFloat(latitude), parseFloat(longitude))) {
-    //   return res.status(400).json({ error: 'Reporting is only allowed within India.' });
-    // }
+    if (!isLocationInIndia(parseFloat(latitude), parseFloat(longitude))) {
+      return res.status(400).json({ error: 'Reporting is only allowed within India.' });
+    }
 
     // Upload to Google Cloud Storage
     let imageUrl;
